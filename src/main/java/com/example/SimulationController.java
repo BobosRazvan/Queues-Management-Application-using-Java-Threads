@@ -50,7 +50,6 @@ public class SimulationController {
         int minProcessingTime = !textFieldMinProcesingTime.getText().isEmpty() ? Integer.parseInt(textFieldMinProcesingTime.getText()) : 0;
         int maxProcessingTime = !textFieldMaxProcesingTime.getText().isEmpty() ? Integer.parseInt(textFieldMaxProcesingTime.getText()) : 0;
         int timeLimit = !textFieldTimeLimit.getText().isEmpty() ? Integer.parseInt(textFieldTimeLimit.getText()) : 0;
-
         System.out.println("The policy is: "+ lastSelectionPolicy);
         // Create a new SimulationManager instance using the last selected policy
         SimulationManager simulationManager = new SimulationManager(
@@ -63,12 +62,9 @@ public class SimulationController {
                 minProcessingTime,
                 maxProcessingTime
         );
-
         //SimulationManager simulationManager=new SimulationManager(SelectionPolicy.SHORTEST_TIME,6,2,15,10,10,1,5);
         Thread simulationThread=new Thread(simulationManager);
         simulationThread.start();
-
-
         new Thread(() -> {
             while (simulationThread.isAlive()) {
                 textArea.appendText(simulationManager.getCurrentOutput());

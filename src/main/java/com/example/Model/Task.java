@@ -1,12 +1,10 @@
 package com.example.Model;
 
 public class Task {
-
     int ID;
-    int arrivalTime;
-    int serviceTime;
-    boolean dispatched;
-
+    int arrivalTime;//volatile
+    int serviceTime;//volatile
+    boolean dispatched;//volatile
     public Task(int ID, int arrivalTime, int serviceTime) {
         this.ID = ID;
         this.arrivalTime = arrivalTime;
@@ -14,7 +12,6 @@ public class Task {
         this.dispatched=false;
 
     }
-
     public int getID() {
         return ID;
     }
@@ -26,11 +23,9 @@ public class Task {
     public int getServiceTime() {
         return serviceTime;
     }
-
     @Override
     public String toString(){
         return " (" + ID + "," + arrivalTime + "," + serviceTime + ");";
-
     }
 
     public boolean isDispatched() {

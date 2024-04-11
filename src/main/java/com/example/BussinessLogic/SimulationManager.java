@@ -31,6 +31,8 @@ public class SimulationManager implements Runnable{
     public int peakHour;
     private int[] taskArrivalCount;
     private AtomicInteger currentTime;
+    // New thread for writing to the text file
+    private Thread fileWritingThread;
 
     public SimulationManager(SelectionPolicy selectionPolicy, int numberOfClients, int numberOfServers, int timeLimit, int minArrivalTime,int maxArrivalTime,int minProcessingTime, int maxProcessingTime) {
         this.currentTime = new AtomicInteger(0);
@@ -58,11 +60,28 @@ public class SimulationManager implements Runnable{
 
         scheduler=new Scheduler(numberOfServers,logger,displayGeneratedTasks);///aici schimba maxTasks PEr Servers
         scheduler.changeStrategy(SelectionPolicy.SHORTEST_TIME);
-
+        startFileWritingThread();
 
     }
 
 
+    private void startFileWritingThread() {
+        fileWritingThread = new Thread(() -> {
+            try {
+                while (!Thread.currentThread().isInterrupted()) {
+                    updateTxt();
+                    Thread.sleep(1000);
+                }
+            } catch (InterruptedException e) {
+                // Handle interruption gracefully
+                System.out.println("File writing thread interrupted.");
+            } catch (IOException e) {
+                // Handle IOException
+                throw new RuntimeException(e);
+            }
+        });
+        fileWritingThread.start();
+    }
 
 
 
@@ -72,12 +91,8 @@ public class SimulationManager implements Runnable{
         try {
             generateNRandomTasks();
             //generateHardcodedTasks();
-
             while (currentTime.get() <= timeLimit && !Thread.currentThread().isInterrupted()) {
-
-
                 System.out.println("Time: " + currentTime);
-
                 for (Task task : generatedTasks) {
                     if (currentTime.get() >= task.getArrivalTime() && !task.isDispatched()) {
                         scheduler.dispatchTask(task);
@@ -86,16 +101,12 @@ public class SimulationManager implements Runnable{
                         updateMetrics(task);
                     }
                 }
-
-                updateTxt();
+                //updateTxt();
                 Thread.sleep(1000);
                 currentTime.incrementAndGet();
-
             }
         } catch (InterruptedException e) {
             e.printStackTrace();
-        } catch (IOException e) {
-            throw new RuntimeException(e);
         } finally {
             scheduler.interruptServers();
             try {
@@ -103,6 +114,8 @@ public class SimulationManager implements Runnable{
                 logger.close();
             } catch (IOException e) {
                 e.printStackTrace();
+            }finally {
+                fileWritingThread.interrupt();
             }
         }
     }
@@ -148,15 +161,21 @@ public class SimulationManager implements Runnable{
     }
 
     public synchronized void updateTxt() throws IOException {
+
+        if (logger == null) {
+            // Reopen the logger stream
+            logger = new FileWriter("src/simulation.txt", true);
+        }
+
         StringBuilder output = new StringBuilder();
 
-        // Append current time
+
         output.append("Time: ").append(currentTime).append("\n");
 
-        // Append waiting clients
+
         output.append("Waiting clients:").append(displayGeneratedTasks).append("\n");
 
-        // Append queues for each server
+
         for (Server server : scheduler.getServers()) {
             BlockingQueue<Task> tasks = server.getTasks();
             output.append("Queue ").append(server.getId()).append(": ");
@@ -170,20 +189,22 @@ public class SimulationManager implements Runnable{
             }
         }
 
-        // Write the output to the logger
+
         logger.write(output.toString());
+        logger.flush();
     }
+
 
     public synchronized String getCurrentOutput() {
         StringBuilder output = new StringBuilder();
 
-        // Append current time
+
         output.append("Time: ").append(currentTime).append("\n");
 
-        // Append waiting clients
+
         output.append("Waiting clients:").append(displayGeneratedTasks).append("\n");
 
-        // Append queues for each server
+
         for (Server server : scheduler.getServers()) {
             BlockingQueue<Task> tasks = server.getTasks();
             output.append("Queue ").append(server.getId()).append(": ");
@@ -208,10 +229,10 @@ public class SimulationManager implements Runnable{
 
     // Method to update peak hour
     private synchronized void updatePeakHour(Task task) {
-        // Increment the count of tasks arrived in the hour of the current task
+
         taskArrivalCount[task.getArrivalTime()]++;
 
-        // Update peak hour if the current hour has more tasks than the previous peak hour
+
         if (taskArrivalCount[task.getArrivalTime()] > peakHourTasks) {
             peakHourTasks = taskArrivalCount[task.getArrivalTime()];
             peakHour = task.getArrivalTime();
@@ -224,12 +245,12 @@ public class SimulationManager implements Runnable{
             double avgWaitingTime = totalTasksArrived == 0 ? 0 : totalWaitingTime / (double) totalTasksArrived;
             double avgServiceTime = totalTasksArrived == 0 ? 0 : totalServiceTime / (double) totalTasksArrived;
 
-            // Append average waiting time, average service time, and peak hour to the log
+
             metricsLog.append("Average Waiting Time: ").append(avgWaitingTime).append("\n");
             metricsLog.append("Average Service Time: ").append(avgServiceTime).append("\n");
             metricsLog.append("Peak hour: Time ").append(peakHour).append("\n");
 
-            // Write the log to the file
+
             try (FileWriter logger = new FileWriter("src/simulation.txt", true)) {
                 logger.write(metricsLog.toString());
             }

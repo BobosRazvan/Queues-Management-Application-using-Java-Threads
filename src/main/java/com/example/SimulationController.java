@@ -42,7 +42,6 @@ public class SimulationController {
     private SelectionPolicy lastSelectionPolicy = SelectionPolicy.SHORTEST_TIME; // Keep track of the last selection policy
     @FXML
     public void startSimulation() {
-        // Ensure text fields have valid input before parsing
         int numberOfClients = !textFieldClients.getText().isEmpty() ? Integer.parseInt(textFieldClients.getText()) : 0;
         int numberOfServers = !textFieldServers.getText().isEmpty() ? Integer.parseInt(textFieldServers.getText()) : 0;
         int minArrivalTime = !textFieldMinArrival.getText().isEmpty() ? Integer.parseInt(textFieldMinArrival.getText()) : 0;
@@ -51,18 +50,7 @@ public class SimulationController {
         int maxProcessingTime = !textFieldMaxProcesingTime.getText().isEmpty() ? Integer.parseInt(textFieldMaxProcesingTime.getText()) : 0;
         int timeLimit = !textFieldTimeLimit.getText().isEmpty() ? Integer.parseInt(textFieldTimeLimit.getText()) : 0;
         System.out.println("The policy is: "+ lastSelectionPolicy);
-        // Create a new SimulationManager instance using the last selected policy
-        SimulationManager simulationManager = new SimulationManager(
-                lastSelectionPolicy,
-                numberOfClients,
-                numberOfServers,
-                timeLimit,
-                minArrivalTime,
-                maxArrivalTime,
-                minProcessingTime,
-                maxProcessingTime
-        );
-        //SimulationManager simulationManager=new SimulationManager(SelectionPolicy.SHORTEST_TIME,6,2,15,10,10,1,5);
+        SimulationManager simulationManager = new SimulationManager(lastSelectionPolicy, numberOfClients, numberOfServers, timeLimit, minArrivalTime, maxArrivalTime, minProcessingTime, maxProcessingTime);
         Thread simulationThread=new Thread(simulationManager);
         simulationThread.start();
         new Thread(() -> {
@@ -74,7 +62,6 @@ public class SimulationController {
                     e.printStackTrace();
                 }
             }
-
             String metrics = simulationManager.getMetrics();
             textAreaMetrics.setText(metrics);
         }).start();
